@@ -12,6 +12,8 @@ namespace ldpi
     public:
         Packet() : Buffer() {};
 
+        Packet* copy();
+
         IPHeader* get_ip_header() const;
         IPProtocol get_protocol() const;
         InBuffer get_body() const;

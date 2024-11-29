@@ -15,14 +15,4 @@ namespace ldpi
         _size = size;
         memcpy(_data, data, size);
     }
-
-    char Buffer::operator[](uint32_t idx) const
-    {
-        return _buffer[idx];
-    }
-
-    char* Buffer::operator+(uint32_t offset) const
-    {
-        return const_cast<char*>(_buffer) + offset;
-    }
 }

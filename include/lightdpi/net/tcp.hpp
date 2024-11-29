@@ -4,16 +4,17 @@
 
 namespace ldpi
 {
-    enum class TCPFlags
+    // namespace as scope
+    namespace TCPFlags
     {
-        FIN = 0x01,
-        SYN = 0x02,
-        RST = 0x04,
-        PSH = 0x08,
-        ACK = 0x10,
-        URG = 0x20,
-        ECE = 0x40,
-        CWR = 0x80,
+        static constexpr uint8_t FIN = 0x01;
+        static constexpr uint8_t SYN = 0x02;
+        static constexpr uint8_t RST = 0x04;
+        static constexpr uint8_t PSH = 0x08;
+        static constexpr uint8_t ACK = 0x10;
+        static constexpr uint8_t URG = 0x20;
+        static constexpr uint8_t ECE = 0x40;
+        static constexpr uint8_t CWR = 0x80;
     };
 
     struct TCPHeader

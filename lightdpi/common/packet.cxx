@@ -3,6 +3,13 @@
 
 namespace ldpi
 {
+    Packet* Packet::copy()
+    {
+        Packet* new_packet = new Packet();
+        new_packet->copy_from(_data, _size);
+        return new_packet;
+    }
+
     IPHeader* Packet::get_ip_header() const
     {
         return (IPHeader*)_data;

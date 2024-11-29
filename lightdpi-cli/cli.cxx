@@ -26,16 +26,18 @@ void print_info(const ldpi::Params& params)
     std::cout << "LightDPI v" LDPI_VERSION << std::endl;
 }
 
-int main()
-{
-
-}
+#include <lightdpi/modifiers/fakettl.hpp>
 
 // I would use WinMain but meh
-int _main(int argc, char** argv)
+int main(int argc, char** argv)
 {
     ldpi::Params params;
     get_params(argc, argv, params);
+
+    // Test
+    params.desync.first_attack = \
+        new ldpi::FakeTTLModifier(ldpi::FakeTTLModifier::Type::FAKE_RANDOM, 10);
+    ///////
 
     print_info(params);
 

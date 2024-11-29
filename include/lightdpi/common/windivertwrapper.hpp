@@ -13,8 +13,8 @@ namespace ldpi
         WinDivertWrapper(HANDLE handle) : _handle{handle} {}
         ~WinDivertWrapper();
 
-        bool recv(InBuffer* buffer, WinDivertAddress* address = nullptr);
-        bool send(const InBuffer& buffer, WinDivertAddress* address = nullptr);
+        bool recv(InBuffer* buffer, WinDivertAddress* address = nullptr) const;
+        bool send(const InBuffer& buffer, WinDivertAddress* address = nullptr) const;
 
     private:
         HANDLE _handle;

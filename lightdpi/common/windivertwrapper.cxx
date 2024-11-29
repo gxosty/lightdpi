@@ -7,7 +7,7 @@ namespace ldpi
         WinDivertClose(_handle);
     }
 
-    bool WinDivertWrapper::recv(InBuffer* buffer, WinDivertAddress* address)
+    bool WinDivertWrapper::recv(InBuffer* buffer, WinDivertAddress* address) const
     {
         uint32_t recv_size;
         bool res = WinDivertRecv(
@@ -21,7 +21,7 @@ namespace ldpi
         return res;
     }
 
-    bool WinDivertWrapper::send(const InBuffer& buffer, WinDivertAddress* address)
+    bool WinDivertWrapper::send(const InBuffer& buffer, WinDivertAddress* address) const
     {
         return WinDivertSend(
             _handle,

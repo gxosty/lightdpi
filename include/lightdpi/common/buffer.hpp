@@ -21,9 +21,6 @@ namespace ldpi
 
         void copy_from(char* data, size_t size);
 
-        char operator[](uint32_t idx) const;
-        char* operator+(uint32_t offset) const;
-
     protected:
         char _buffer[LDPI_BUFFER_MAX_SIZE];
     };

@@ -11,10 +11,10 @@ namespace ldpi
     {
         bool verbose = false;
         std::vector<DNSResolver*> dns;
-        struct desync
+        struct _desync_
         {
             Modifier* zero_attack = nullptr;
             Modifier* first_attack = nullptr;
-        };
+        } desync;
     };
 }
