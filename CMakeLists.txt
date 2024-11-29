@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
-set(PROJECT_NAME lightdpi)
-set(PROJECT_VERSION "1.0.0")
-
+set(PROJECT_NAME LightDPI)
+set(LDPI_VERSION 1.0.0)
 set(LDPI_CORE_LIB_NAME lightdpi)
 set(LDPI_CLI_NAME lightdpi-cli)
 
@@ -14,7 +13,7 @@ option(LDPI_BUILD_SHARED_LIB "Build shared library (or static if switched off)" 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-add_compile_definitions(LDPI_VERSION ${PROJECT_VERSION})
+add_compile_definitions(LDPI_VERSION="${LDPI_VERSION}")
 
 list(APPEND LDPI_CORE_LIB_SOURCES
     lightdpi/lightdpi.cxx
@@ -23,17 +22,28 @@ list(APPEND LDPI_CORE_LIB_SOURCES
     lightdpi/common/windivertwrapper.cxx
 )
 
+list (APPEND LDPI_CORE_LIB_LIBRARIES
+    WinDivert
+
+    libcurl.a
+    libwolfssl.a
+    libzlibstatic.a
+
+    ws2_32
+    advapi32
+    wldap32
+    crypt32
+    bcrypt
+)
+
 if(LDPI_BUILD_SHARED_LIB)
     add_library(${LDPI_CORE_LIB_NAME} SHARED ${LDPI_CORE_LIB_SOURCES})
 else()
-    add_library(${LDPI_CORE_LIB_NAME} STAIC ${LDPI_CORE_LIB_SOURCES})
+    add_library(${LDPI_CORE_LIB_NAME} STATIC ${LDPI_CORE_LIB_SOURCES})
 endif()
 
 target_link_libraries(${LDPI_CORE_LIB_NAME}
-    WinDivert
-    curl
-    wolfssl
-    zlibstatic
+    ${LDPI_CORE_LIB_LIBRARIES}
 )
 
 if(LDPI_BUILD_CLI)
