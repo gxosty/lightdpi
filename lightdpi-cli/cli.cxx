@@ -26,6 +26,7 @@ void print_info(const ldpi::Params& params)
     std::cout << "LightDPI v" LDPI_VERSION << std::endl;
 }
 
+#include <lightdpi/dns/doh.hpp>
 #include <lightdpi/modifiers/fakettl.hpp>
 
 // I would use WinMain but meh
@@ -35,8 +36,10 @@ int main(int argc, char** argv)
     get_params(argc, argv, params);
 
     // Test
-    params.desync.first_attack = \
-        new ldpi::FakeTTLModifier(ldpi::FakeTTLModifier::Type::FAKE_RANDOM, 10);
+    // params.dns.push_back(new ldpi::DNSOverHTTPS("https://dns.google/dns-query", "216.239.36.36", "www.google.com"));
+
+    // params.desync.first_attack = \
+    //     new ldpi::FakeTTLModifier(ldpi::FakeTTLModifier::Type::FAKE_RANDOM, 10);
     ///////
 
     print_info(params);

@@ -86,8 +86,8 @@ namespace ldpi
         TCPHeader* tcp_header = fake_packet->get_transport_layer<TCPHeader>();
         ip_header->ttl = _fake_packet_ttl;
 
-        calculate_tcp_checksum(ip_header, tcp_header);
-        calculate_ip_checksum(ip_header);
+        ip_header->checksum = calculate_ip_checksum(ip_header);
+        tcp_header->checksum = calculate_tcp_checksum(ip_header, tcp_header);
 
         divert.send(*fake_packet, address);
         divert.send(*packet, address);

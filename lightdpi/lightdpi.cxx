@@ -30,7 +30,7 @@ namespace ldpi
         logger.withfl("WinDivert filter: ", filter).commit();
 
         HANDLE handle = WinDivertOpen(
-            "ip.DstAddr == 209.85.233.147",
+            filter.c_str(),
             WINDIVERT_LAYER_NETWORK,
             WINDIVERT_PRIORITY_HIGHEST-1000,
             0
@@ -80,7 +80,6 @@ namespace ldpi
                             InBuffer data = packet.get_body();
                             if ((data[0] == 0x16) && (data[5] == 0x01))
                             {
-                                logger.withfl("TLSClientHello detected").commit();
                                 if (_do_first_attack(divert, &packet, &address))
                                     continue;
                             }
@@ -142,7 +141,18 @@ namespace ldpi
         Packet* packet,
         WinDivertAddress* address)
     {
-        // divert.send(packet, address);
+        Packet out_packet;
+
+        for (auto dns : _params.dns)
+        {
+            if (dns->resolve(packet, &out_packet))
+            {
+                address->Outbound = 0;
+                divert.send(out_packet, address);
+                return true;
+            }
+        }
+
         return false;
     }
 

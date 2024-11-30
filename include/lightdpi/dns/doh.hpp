@@ -19,7 +19,7 @@ namespace ldpi
 
         ~DNSOverHTTPS() override;
 
-        void resolve(Packet* in_packet, Packet* out_packet) override;
+        bool resolve(Packet* in_packet, Packet* out_packet) override;
 
         const std::string& get_url() const;
         const std::string& get_ip() const;
@@ -32,6 +32,8 @@ namespace ldpi
         std::string _url;
         std::string _ip;
         std::string _front;
+
+        std::string _query_url;
 
     };
 }

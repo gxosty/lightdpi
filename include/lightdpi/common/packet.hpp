@@ -13,6 +13,7 @@ namespace ldpi
         Packet() : Buffer() {};
 
         Packet* copy();
+        void print() const;
 
         IPHeader* get_ip_header() const;
         IPProtocol get_protocol() const;
@@ -25,5 +26,9 @@ namespace ldpi
             char* transport_layer = ((char*)&_buffer) + ip_header->header_len * 4;
             return reinterpret_cast<T*>(transport_layer);
         }
+
+        void update_checksums();
+        void reverse_direction();
+        void make_unique();
     };
 }
