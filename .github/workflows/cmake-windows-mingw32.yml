@@ -31,7 +31,7 @@ jobs:
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 
     - name: Build
-      working-directory: ${{github.workspace}}
+      working-directory: ${{github.workspace}}/build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build .
+      run: cmake --build .
 
