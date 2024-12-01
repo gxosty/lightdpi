@@ -1,7 +1,19 @@
 #include <iostream>
+#include <filesystem>
+#include <unordered_map>
+#include <string>
 #include <signal.h>
 #include <argparse/argparse.hpp>
+#include "exceptions.hpp"
+#include "config.hpp"
+
 #include <lightdpi/lightdpi.hpp>
+
+#include <lightdpi/dns/doh.hpp>
+
+#include <lightdpi/modifiers/fakettl.hpp>
+
+namespace fs = std::filesystem;
 
 static ldpi::LightDPI* light = nullptr;
 
@@ -16,31 +28,110 @@ void handle_sigint(int sig)
 
 void get_params(int argc, char** argv, ldpi::Params& params)
 {
-    // argparse::ArgumentParser program(argv[0]);
+    argparse::ArgumentParser program(argv[0]);
 
-    // program.add_argument("--dns");
+    program.add_argument("--config")
+        .help("Config file to use")
+        .default_value("config.json")
+        .nargs(1);
+
+    try {
+        program.parse_args(argc, argv);
+    } catch (const std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        std::cout << program << std::endl;
+        std::exit(1);
+    }
+
+    fs::path config_path = fs::path(program.get<std::string>("--config"));
+
+    try {
+        load_from_config(config_path, params);
+        return; // return after successfully reading config
+    } catch (const std::runtime_error& err) {
+        std::cerr << "Error: " << err.what() << std::endl;
+    }
+
+    // act as finally block
+    std::exit(1);
 }
 
 void print_info(const ldpi::Params& params)
 {
     std::cout << "LightDPI v" LDPI_VERSION << std::endl;
+
+    if (!params.dns.empty())
+    {
+        std::cout << "\nDNS Configuration:" << std::endl;
+
+        for (auto dns : params.dns)
+        {
+            std::cout << "- ";
+
+            if (auto doh = dynamic_cast<ldpi::DNSOverHTTPS*>(dns))
+            {
+                std::cout << "DNS-over-HTTPS: " << doh->get_url();
+
+                if (!doh->get_front().empty())
+                {
+                    std::cout << " (front: " << doh->get_front() << ")";
+                }
+
+                if (!doh->get_ip().empty())
+                {
+                    std::cout << " -> " << doh->get_ip();
+                }
+            }
+            else
+            {
+                std::cout << "Unknown";
+            }
+
+            std::cout << std::endl;
+        }
+    }
+
+    if (params.desync.zero_attack)
+    {
+        std::cout << "\nZero Attack: " << std::endl;
+        // TODO
+    }
+
+    if (params.desync.first_attack)
+    {
+        std::cout << "\nFirst Attack: ";
+
+        if (auto fakettl = dynamic_cast<ldpi::FakeTTLModifier*>(params.desync.first_attack))
+        {
+            static std::unordered_map<ldpi::FakeTTLModifier::Type, std::string> fake_str = {
+                {ldpi::FakeTTLModifier::Type::FAKE_RANDOM, "FAKE_RANDOM"},
+                {ldpi::FakeTTLModifier::Type::FAKE_DECOY, "FAKE_DECOY"}
+            };
+
+            std::cout << "FakeTTL" << std::endl;
+
+            std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;
+            std::cout << "- Fake Packet TTL: " << fakettl->get_fake_packet_ttl() << std::endl;
+        }
+        else
+        {
+            std::cout << "Unknown" << std::endl;
+        }
+    }
 }
 
-#include <lightdpi/dns/doh.hpp>
-#include <lightdpi/modifiers/fakettl.hpp>
+// Test
+// params.dns.push_back(new ldpi::DNSOverHTTPS("https://dns.google/dns-query", "216.239.36.36", "www.google.com"));
+
+// params.desync.first_attack = \
+//     new ldpi::FakeTTLModifier(ldpi::FakeTTLModifier::Type::FAKE_RANDOM, 10);
+///////
 
 // I would use WinMain but meh
 int main(int argc, char** argv)
 {
     ldpi::Params params;
     get_params(argc, argv, params);
-
-    // Test
-    // params.dns.push_back(new ldpi::DNSOverHTTPS("https://dns.google/dns-query", "216.239.36.36", "www.google.com"));
-
-    // params.desync.first_attack = \
-    //     new ldpi::FakeTTLModifier(ldpi::FakeTTLModifier::Type::FAKE_RANDOM, 10);
-    ///////
 
     print_info(params);
 

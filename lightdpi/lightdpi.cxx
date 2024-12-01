@@ -1,6 +1,11 @@
+#include <cstring>
+#include <cstdlib>
+#include <thread>
+
 #include <lightdpi/lightdpi.hpp>
 #include <lightdpi/dns/doh.hpp>
 
+#include <lightdpi/utils.hpp>
 #include "internal/logger.hpp"
 
 #include <winsock.h>
@@ -47,53 +52,31 @@ namespace ldpi
         WinDivertAddress address;
         _running = true;
 
+        std::thread dns_loop_th(&LightDPI::_dns_loop, this);
+
         while (_running)
         {
             if (divert.recv(&packet, &address))
             {
                 IPProtocol protocol = packet.get_protocol();
+                TCPHeader* tcp_header = packet.get_transport_layer<TCPHeader>();
 
-                if (protocol == IPProtocol::UDP)
+                // HTTPS
+                if (ntohs(tcp_header->destination_port) == 443)
                 {
-                    UDPHeader* udp_header = packet.get_transport_layer<UDPHeader>();
-                    if (ntohs(udp_header->destination_port) == 53)
-                    {
-                        if (_do_dns_query(divert, &packet, &address))
-                            continue;
-                    }
-                }
-                else if (protocol == IPProtocol::TCP)
-                {
-                    TCPHeader* tcp_header = packet.get_transport_layer<TCPHeader>();
-                    if (ntohs(tcp_header->destination_port) == 443)
-                    {
-                        namespace f = TCPFlags;
-                        if ((tcp_header->flags == f::SYN)
-                            && (_params.desync.zero_attack))
-                        {
-                            if (_do_zero_attack(divert, &packet, &address))
-                                continue;
-                        }
-                        else if ((tcp_header->flags == (f::PSH | f::ACK))
-                            && (_params.desync.first_attack))
-                        {
-                            InBuffer data = packet.get_body();
-                            if ((data[0] == 0x16) && (data[5] == 0x01))
-                            {
-                                if (_do_first_attack(divert, &packet, &address))
-                                    continue;
-                            }
-                        }
-                    }
+                    if (_do_https_first_attack(divert, &packet, &address))
+                        continue;
                 }
 
                 divert.send(packet, &address);
             }
             else
             {
-                logger.withfl("divert.recv returned false").commit();
+                logger.withfl("divert.recv error: ", (int)GetLastError()).commit();
             }
         }
+
+        dns_loop_th.join();
     }
 
     void LightDPI::stop()
@@ -101,38 +84,81 @@ namespace ldpi
         _running = false;
     }
 
+    void LightDPI::_dns_loop()
+    {
+        std::string filter = "outbound and udp.DstPort == 53 and !impostor";
+
+        internal::Logger logger;
+        logger.withfl("WinDivert DNS filter: ", filter).commit();
+
+        HANDLE handle = WinDivertOpen(
+            filter.c_str(),
+            WINDIVERT_LAYER_NETWORK,
+            WINDIVERT_PRIORITY_HIGHEST-1001,
+            0
+        );
+
+        if (handle == INVALID_HANDLE_VALUE)
+        {
+            throw WinDivertOpenError("Failed opening WinDivert handle (DNS)");
+        }
+
+        WinDivertWrapper divert(handle);
+
+        Packet packet;
+        WinDivertAddress address;
+
+        while (_running)
+        {
+            if (divert.recv(&packet, &address))
+            {
+                if (_do_dns_query(divert, &packet, &address))
+                    continue;
+
+                divert.send(packet, &address);
+            }
+            else
+            {
+                logger.withfl("(DNS) divert.recv error: ", (int)GetLastError()).commit();
+            }
+        }
+    }
+
     void LightDPI::_get_filter(std::string& filter)
     {
         filter.clear();
 
-        filter += "(";
+        filter += "tcp and !impostor"
+                  " and (ip.DstAddr != 127.0.0.1 and ip.SrcAddr != 127.0.0.1)";
 
-        for (DNSResolver* resolver : _params.dns)
+        // Exclude DNS-over-HTTPS ips
+        if (!_params.dns.empty())
         {
-            if (auto doh_resolver = dynamic_cast<DNSOverHTTPS*>(resolver))
+            filter += " and (";
+            bool added = false;
+            for (DNSResolver* resolver : _params.dns)
             {
-                const std::string& doh_ip = doh_resolver->get_ip();
-
-                if (doh_ip.empty())
+                if (auto doh_resolver = dynamic_cast<DNSOverHTTPS*>(resolver))
                 {
-                    continue;
-                }
+                    const std::string& doh_ip = doh_resolver->get_ip();
 
-                if (filter.size() > 1)
-                {
-                    filter += " and ";
-                }
+                    if (doh_ip.empty())
+                    {
+                        continue;
+                    }
 
-                filter += \
-                    "(ip.DstAddr != " + doh_ip + " and ip.SrcAddr != " + doh_ip + ")";
+                    if (added)
+                    {
+                        filter += " and ";
+                    }
+
+                    added = true;
+                    filter += \
+                        "(ip.DstAddr != " + doh_ip + " and ip.SrcAddr != " + doh_ip + ")";
+                }
             }
-        }
 
-        filter += ")";
-
-        if (filter.size() == 2)
-        {
-            filter = "true";
+            filter += ")";
         }
     }
 
@@ -178,7 +204,7 @@ namespace ldpi
         return false;
     }
 
-    bool LightDPI::_do_first_attack(
+    bool LightDPI::_do_https_first_attack(
         const WinDivertWrapper& divert,
         Packet* packet,
         WinDivertAddress* address)

@@ -9,7 +9,6 @@ namespace ldpi
     public:
         enum class Type
         {
-            FAKE_COPY,
             FAKE_DECOY,
             FAKE_RANDOM
         };
@@ -23,6 +22,9 @@ namespace ldpi
             const WinDivertWrapper& divert,
             Packet* packet,
             WinDivertAddress* address) override;
+
+        Type get_fake_packet_type() const;
+        int get_fake_packet_ttl() const;
 
     private:
         Type _fake_packet_type;

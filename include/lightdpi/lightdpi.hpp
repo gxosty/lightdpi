@@ -20,6 +20,9 @@ namespace ldpi
         void stop();
 
     private:
+        void _dns_loop();
+
+    private:
         HANDLE _handle;
         Params _params;
         bool _running;
@@ -37,7 +40,7 @@ namespace ldpi
             Packet* packet,
             WinDivertAddress* address);
 
-        bool _do_first_attack(
+        bool _do_https_first_attack(
             const WinDivertWrapper& divert,
             Packet* packet,
             WinDivertAddress* address);

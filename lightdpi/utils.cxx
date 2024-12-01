@@ -63,4 +63,25 @@ namespace ldpi
         for (int i = 0; i < count; i++)
             buffer[i] = rand() % 256;
     }
+
+    bool is_tls_client_hello(const InBuffer& data)
+    {
+        // return ((data.get_size() > 0)
+        //     && ((data[0] == 0x16) || (data[0] == 0x17))
+        //     && (data[1] == 0x03)
+        //     && (data[2] < 0xA)
+        //     && (data[5] == 0x01));
+
+        // return ((data[0] == 0x16) && (data[5] == 0x01));
+
+        return (
+            ((data[0] == 0x16)
+             && (data[1] == 0x03)
+             && (
+                    (data[2] == 0x01)
+                    || (data[2] == 0x03)
+                )
+            )
+        );
+    }
 }

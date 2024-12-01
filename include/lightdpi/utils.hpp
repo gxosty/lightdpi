@@ -3,6 +3,8 @@
 #include <string>
 #include <curl/curl.h>
 
+#include "common/inbuffer.hpp"
+
 namespace ldpi
 {
     void get_url_host(const std::string& url, std::string& out_host);
@@ -15,4 +17,6 @@ namespace ldpi
     int get_port_by_protocol(const std::string& url);
 
     void generate_random_bytes(char* buffer, int count);
+
+    bool is_tls_client_hello(const InBuffer& data);
 }

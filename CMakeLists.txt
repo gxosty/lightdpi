@@ -10,10 +10,12 @@ option(LDPI_BUILD_SHARED_LIB "Build shared library (or static if switched off)" 
 
 project(${PROJECT_NAME})
 
+set(CMAKE_CXX_STANDARD 23)
+
 add_compile_definitions(LDPI_VERSION="${LDPI_VERSION}")
 add_compile_definitions(CURL_STATICLIB=1)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_definitions(LDPI_DEBUG=1)
 endif()
 
@@ -45,7 +47,7 @@ list(APPEND LDPI_CORE_LIB_SOURCES
     lightdpi/net/checksum.cxx
 )
 
-list (APPEND LDPI_CORE_LIB_LIBRARIES
+list(APPEND LDPI_CORE_LIB_LIBRARIES
     # Drivers
     WinDivert
 
@@ -75,6 +77,7 @@ target_link_libraries(${LDPI_CORE_LIB_NAME}
 if(LDPI_BUILD_CLI)
     add_executable(${LDPI_CLI_NAME}
         lightdpi-cli/cli.cxx
+        lightdpi-cli/config.cxx
     )
 
     target_link_libraries(${LDPI_CLI_NAME}

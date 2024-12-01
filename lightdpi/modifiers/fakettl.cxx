@@ -5,6 +5,7 @@
 #include <lightdpi/net/checksum.hpp>
 
 #include "../internal/data.hpp"
+#include "../internal/logger.hpp"
 
 #include <cstring>
 
@@ -16,6 +17,7 @@ namespace ldpi
 
     bool FakeTTLModifier::filter_out(Packet* packet)
     {
+        internal::Logger logger;
         if (packet->get_protocol() != IPProtocol::TCP)
         {
             return false;
@@ -23,14 +25,15 @@ namespace ldpi
 
         TCPHeader* tcp_header = packet->get_transport_layer<TCPHeader>();
 
-        if (~(tcp_header->flags) & TCPFlags::PSH)
+        namespace f = TCPFlags;
+        if ((tcp_header->flags != f::ACK) && (tcp_header->flags != (f::PSH | f::ACK)))
         {
             return false;
         }
 
         InBuffer data = packet->get_body();
 
-        if ((data[0] == 0x16) && (data[5] == 0x01))
+        if (is_tls_client_hello(data))
         {
             return true;
         }
@@ -45,11 +48,7 @@ namespace ldpi
     {
         Packet* fake_packet = nullptr;
 
-        if (_fake_packet_type == Type::FAKE_COPY)
-        {
-            fake_packet = packet->copy();
-        }
-        else if (_fake_packet_type == Type::FAKE_DECOY)
+        if (_fake_packet_type == Type::FAKE_DECOY)
         {
             fake_packet = packet->copy();
             InBuffer body = fake_packet->get_body();
@@ -75,6 +74,7 @@ namespace ldpi
 
             IPHeader* ip_header = fake_packet->get_ip_header();
             size_t headers_size = (uintptr_t)data - (uintptr_t)ip_header;
+            ip_header->length = htons(256 + headers_size);
             fake_packet->set_size(256 + headers_size);
         }
         else
@@ -91,5 +91,15 @@ namespace ldpi
 
         divert.send(*fake_packet, address);
         divert.send(*packet, address);
+    }
+
+    FakeTTLModifier::Type FakeTTLModifier::get_fake_packet_type() const
+    {
+        return _fake_packet_type;
+    }
+
+    int FakeTTLModifier::get_fake_packet_ttl() const
+    {
+        return _fake_packet_ttl;
     }
 }
