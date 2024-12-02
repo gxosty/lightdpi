@@ -1,3 +1,6 @@
+#include <random>
+#include <cstring>
+
 #include <lightdpi/utils.hpp>
 #include <lightdpi/modifiers/fakettl.hpp>
 #include <lightdpi/net/ip.hpp>
@@ -6,8 +9,6 @@
 
 #include "../internal/data.hpp"
 #include "../internal/logger.hpp"
-
-#include <cstring>
 
 namespace ldpi
 {
@@ -47,35 +48,28 @@ namespace ldpi
             WinDivertAddress* address)
     {
         Packet* fake_packet = nullptr;
+        size_t fake_bytes_size = 0;
+
+        fake_packet = packet->copy();
+        InBuffer body = fake_packet->get_body();
+        char* data = body.get_data();
 
         if (_fake_packet_type == Type::FAKE_DECOY)
         {
-            fake_packet = packet->copy();
-            InBuffer body = fake_packet->get_body();
-            char* data = body.get_data();
             memcpy(
                 data,
                 internal::fake_tls_client_hello,
                 internal::fake_tls_client_hello_size
             );
-            IPHeader* ip_header = fake_packet->get_ip_header();
-            size_t headers_size = (uintptr_t)data - (uintptr_t)ip_header;
-            fake_packet->set_size(internal::fake_tls_client_hello_size + headers_size);
+            fake_bytes_size = internal::fake_tls_client_hello_size;
         }
         else if (_fake_packet_type == Type::FAKE_RANDOM)
         {
-            fake_packet = packet->copy();
-            InBuffer body = fake_packet->get_body();
-            char* data = body.get_data();
+            fake_bytes_size = (rand() % 256) + 256;
 
             do {
-                generate_random_bytes(data, 256);
+                generate_random_bytes(data, 513);
             } while ((data[0] == 0x16) && (data[5] == 0x01));
-
-            IPHeader* ip_header = fake_packet->get_ip_header();
-            size_t headers_size = (uintptr_t)data - (uintptr_t)ip_header;
-            ip_header->length = htons(256 + headers_size);
-            fake_packet->set_size(256 + headers_size);
         }
         else
         {
@@ -83,14 +77,20 @@ namespace ldpi
         }
 
         IPHeader* ip_header = fake_packet->get_ip_header();
-        TCPHeader* tcp_header = fake_packet->get_transport_layer<TCPHeader>();
+        size_t headers_size = (uintptr_t)data - (uintptr_t)ip_header;
+        ip_header->length = htons(513 + headers_size);
+        fake_packet->set_size(513 + headers_size);
         ip_header->ttl = _fake_packet_ttl;
+
+        TCPHeader* tcp_header = fake_packet->get_transport_layer<TCPHeader>();
 
         ip_header->checksum = calculate_ip_checksum(ip_header);
         tcp_header->checksum = calculate_tcp_checksum(ip_header, tcp_header);
 
         divert.send(*fake_packet, address);
         divert.send(*packet, address);
+
+        delete fake_packet;
     }
 
     FakeTTLModifier::Type FakeTTLModifier::get_fake_packet_type() const
