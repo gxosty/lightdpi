@@ -12,6 +12,7 @@
 #include <lightdpi/dns/doh.hpp>
 
 #include <lightdpi/modifiers/fakettl.hpp>
+#include <lightdpi/modifiers/fakechecksum.hpp>
 
 namespace fs = std::filesystem;
 
@@ -101,17 +102,21 @@ void print_info(const ldpi::Params& params)
     {
         std::cout << "\nFirst Attack: ";
 
+        static std::unordered_map<ldpi::FakeModifier::Type, std::string> fake_str = {
+            {ldpi::FakeModifier::Type::FAKE_RANDOM, "FAKE_RANDOM"},
+            {ldpi::FakeModifier::Type::FAKE_DECOY, "FAKE_DECOY"}
+        };
+
         if (auto fakettl = dynamic_cast<ldpi::FakeTTLModifier*>(params.desync.first_attack))
         {
-            static std::unordered_map<ldpi::FakeTTLModifier::Type, std::string> fake_str = {
-                {ldpi::FakeTTLModifier::Type::FAKE_RANDOM, "FAKE_RANDOM"},
-                {ldpi::FakeTTLModifier::Type::FAKE_DECOY, "FAKE_DECOY"}
-            };
-
             std::cout << "FakeTTL" << std::endl;
-
             std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;
             std::cout << "- Fake Packet TTL: " << fakettl->get_fake_packet_ttl() << std::endl;
+        }
+        else if (auto fakettl = dynamic_cast<ldpi::FakeChecksumModifier*>(params.desync.first_attack))
+        {
+            std::cout << "FakeChecksum" << std::endl;
+            std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;
         }
         else
         {
@@ -119,13 +124,6 @@ void print_info(const ldpi::Params& params)
         }
     }
 }
-
-// Test
-// params.dns.push_back(new ldpi::DNSOverHTTPS("https://dns.google/dns-query", "216.239.36.36", "www.google.com"));
-
-// params.desync.first_attack = \
-//     new ldpi::FakeTTLModifier(ldpi::FakeTTLModifier::Type::FAKE_RANDOM, 10);
-///////
 
 // I would use WinMain but meh
 int main(int argc, char** argv)

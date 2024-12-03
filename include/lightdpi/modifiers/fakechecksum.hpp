@@ -4,13 +4,10 @@
 
 namespace ldpi
 {
-    class FakeTTLModifier : public FakeModifier
+    class FakeChecksumModifier : public FakeModifier
     {
     public:
-        FakeTTLModifier(
-            FakeModifier::Type fake_packet_type,
-            int fake_packet_ttl
-        );
+        FakeChecksumModifier(FakeModifier::Type fake_packet_type);
 
         bool filter_out(Packet* packet) override;
 
@@ -18,10 +15,5 @@ namespace ldpi
             const WinDivertWrapper& divert,
             Packet* packet,
             WinDivertAddress* address) override;
-
-        int get_fake_packet_ttl() const;
-
-    private:
-        int _fake_packet_ttl;
     };
 }

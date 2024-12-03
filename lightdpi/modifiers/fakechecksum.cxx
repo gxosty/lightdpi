@@ -2,7 +2,7 @@
 #include <cstring>
 
 #include <lightdpi/utils.hpp>
-#include <lightdpi/modifiers/fakettl.hpp>
+#include <lightdpi/modifiers/fakechecksum.hpp>
 #include <lightdpi/net/ip.hpp>
 #include <lightdpi/net/tcp.hpp>
 #include <lightdpi/net/checksum.hpp>
@@ -12,11 +12,10 @@
 
 namespace ldpi
 {
-    FakeTTLModifier::FakeTTLModifier(FakeModifier::Type fake_packet_type, int fake_packet_ttl)
-            : FakeModifier(fake_packet_type)
-            , _fake_packet_ttl{fake_packet_ttl} {}
+    FakeChecksumModifier::FakeChecksumModifier(FakeModifier::Type fake_packet_type)
+            : FakeModifier(fake_packet_type) {}
 
-    bool FakeTTLModifier::filter_out(Packet* packet)
+    bool FakeChecksumModifier::filter_out(Packet* packet)
     {
         internal::Logger logger;
         if (packet->get_protocol() != IPProtocol::TCP)
@@ -42,7 +41,7 @@ namespace ldpi
         return false;
     }
 
-    void FakeTTLModifier::modify_out(
+    void FakeChecksumModifier::modify_out(
             const WinDivertWrapper& divert,
             Packet* packet,
             WinDivertAddress* address)
@@ -80,21 +79,18 @@ namespace ldpi
         size_t headers_size = (uintptr_t)data - (uintptr_t)ip_header;
         ip_header->length = htons(fake_bytes_size + headers_size);
         fake_packet->set_size(fake_bytes_size + headers_size);
-        ip_header->ttl = _fake_packet_ttl;
 
         TCPHeader* tcp_header = fake_packet->get_transport_layer<TCPHeader>();
+        tcp_header->checksum = (rand() % 65534) + 1;
 
         ip_header->checksum = calculate_ip_checksum(ip_header);
-        tcp_header->checksum = calculate_tcp_checksum(ip_header, tcp_header);
+
+        address->IPChecksum = 1;
+        address->TCPChecksum = 1;
 
         divert.send(*fake_packet, address);
         divert.send(*packet, address);
 
         delete fake_packet;
-    }
-
-    int FakeTTLModifier::get_fake_packet_ttl() const
-    {
-        return _fake_packet_ttl;
     }
 }

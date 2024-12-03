@@ -38,10 +38,12 @@ list(APPEND LDPI_CORE_LIB_SOURCES
     lightdpi/dns/doh.cxx
 
     # Internal use sources
+    lightdpi/internal/data.cxx
     lightdpi/internal/helpers.cxx
 
     # Modifiers
     lightdpi/modifiers/fakettl.cxx
+    lightdpi/modifiers/fakechecksum.cxx
 
     # Net helpers
     lightdpi/net/checksum.cxx
