@@ -11,6 +11,7 @@
 
 #include <lightdpi/dns/doh.hpp>
 
+#include <lightdpi/modifiers/fakeack.hpp>
 #include <lightdpi/modifiers/fakettl.hpp>
 #include <lightdpi/modifiers/fakechecksum.hpp>
 
@@ -107,7 +108,12 @@ void print_info(const ldpi::Params& params)
             {ldpi::FakeModifier::Type::FAKE_DECOY, "FAKE_DECOY"}
         };
 
-        if (auto fakettl = dynamic_cast<ldpi::FakeTTLModifier*>(params.desync.first_attack))
+        if (auto fakettl = dynamic_cast<ldpi::FakeACKModifier*>(params.desync.first_attack))
+        {
+            std::cout << "FakeACK" << std::endl;
+            std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;
+        }
+        else if (auto fakettl = dynamic_cast<ldpi::FakeTTLModifier*>(params.desync.first_attack))
         {
             std::cout << "FakeTTL" << std::endl;
             std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;

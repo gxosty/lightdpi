@@ -33,8 +33,8 @@ LightDPI requires a configuration file (default: `config.json`) to define its be
 The configuration file is a JSON file that defines the parameters LightDPI uses. Currently, it supports:
 
 * `dns`: List of DNS resolution methods to use. (default: `null`)
-* `zero-attack`: Set Zero Attack modifier to use. (default: `null`)
-* `https-first-attack`: Set HTTP First Attack modifier to use. (default: `null`)
+* `desync.zero-attack`: Set Zero Attack modifier to use. (default: `null`)
+* `desync.https-first-attack`: Set HTTP First Attack modifier to use. (default: `null`)
 * (Future) Additional modifiers and options can be defined here.
 
 **Example configuration file:**

@@ -2,7 +2,7 @@
 #include <cstring>
 
 #include <lightdpi/utils.hpp>
-#include <lightdpi/modifiers/fakechecksum.hpp>
+#include <lightdpi/modifiers/fakeack.hpp>
 #include <lightdpi/net/ip.hpp>
 #include <lightdpi/net/tcp.hpp>
 #include <lightdpi/net/checksum.hpp>
@@ -12,10 +12,10 @@
 
 namespace ldpi
 {
-    FakeChecksumModifier::FakeChecksumModifier(FakeModifier::Type fake_packet_type)
+    FakeACKModifier::FakeACKModifier(FakeModifier::Type fake_packet_type)
             : FakeModifier(fake_packet_type) {}
 
-    bool FakeChecksumModifier::filter_out(Packet* packet)
+    bool FakeACKModifier::filter_out(Packet* packet)
     {
         if (packet->get_protocol() != IPProtocol::TCP)
         {
@@ -40,7 +40,7 @@ namespace ldpi
         return false;
     }
 
-    void FakeChecksumModifier::modify_out(
+    void FakeACKModifier::modify_out(
             const WinDivertWrapper& divert,
             Packet* packet,
             WinDivertAddress* address)
@@ -80,12 +80,11 @@ namespace ldpi
         fake_packet->set_size(fake_bytes_size + headers_size);
 
         TCPHeader* tcp_header = fake_packet->get_transport_layer<TCPHeader>();
-        tcp_header->checksum = (rand() % 65534) + 1;
+
+        tcp_header->ack_number = rand() % UINT32_MAX;
 
         ip_header->checksum = calculate_ip_checksum(ip_header);
-
-        address->IPChecksum = 1;
-        address->TCPChecksum = 1;
+        tcp_header->checksum = calculate_tcp_checksum(ip_header, tcp_header);
 
         divert.send(*fake_packet, address);
         divert.send(*packet, address);

@@ -18,7 +18,6 @@ namespace ldpi
 
     bool FakeTTLModifier::filter_out(Packet* packet)
     {
-        internal::Logger logger;
         if (packet->get_protocol() != IPProtocol::TCP)
         {
             return false;

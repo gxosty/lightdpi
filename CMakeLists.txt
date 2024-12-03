@@ -42,6 +42,7 @@ list(APPEND LDPI_CORE_LIB_SOURCES
     lightdpi/internal/helpers.cxx
 
     # Modifiers
+    lightdpi/modifiers/fakeack.cxx
     lightdpi/modifiers/fakettl.cxx
     lightdpi/modifiers/fakechecksum.cxx
 

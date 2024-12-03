@@ -8,6 +8,7 @@
 #include <lightdpi/dns/doh.hpp>
 
 #include <lightdpi/modifiers/modifier.hpp>
+#include <lightdpi/modifiers/fakeack.hpp>
 #include <lightdpi/modifiers/fakettl.hpp>
 #include <lightdpi/modifiers/fakechecksum.hpp>
 
@@ -95,7 +96,11 @@ void load_from_config(fs::path config_path, ldpi::Params& params)
                     throw std::runtime_error("Invalid fake packet type for FakeTTL");
                 }
 
-                if (first_attack_type == "fake-ttl")
+                if (first_attack_type == "fake-ack")
+                {
+                    params.desync.first_attack = new ldpi::FakeACKModifier(fake_packet_type);
+                }
+                else if (first_attack_type == "fake-ttl")
                 {
                     int fake_packet_ttl  = first_attack_params["fake-packet-ttl"].get<int>();
                     params.desync.first_attack = new ldpi::FakeTTLModifier(fake_packet_type, fake_packet_ttl);
