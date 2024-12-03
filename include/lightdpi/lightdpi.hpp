@@ -24,6 +24,7 @@ namespace ldpi
 
     private:
         HANDLE _handle;
+        HANDLE _dns_handle;
         Params _params;
         bool _running;
 

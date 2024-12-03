@@ -15,7 +15,8 @@ namespace ldpi
     LightDPI::LightDPI(const Params& params)
         : _params(std::move(params)),
           _running{false},
-          _handle{nullptr} {}
+          _handle{nullptr},
+          _dns_handle{nullptr} {}
 
     LightDPI::~LightDPI()
     {
@@ -34,54 +35,65 @@ namespace ldpi
         internal::Logger logger;
         logger.withfl("WinDivert filter: ", filter).commit();
 
-        HANDLE handle = WinDivertOpen(
+        _handle = WinDivertOpen(
             filter.c_str(),
             WINDIVERT_LAYER_NETWORK,
             WINDIVERT_PRIORITY_HIGHEST-1000,
             0
         );
 
-        if (handle == INVALID_HANDLE_VALUE)
+        if (_handle == INVALID_HANDLE_VALUE)
         {
+            _handle = nullptr;
             throw WinDivertOpenError("Failed opening WinDivert handle");
         }
 
-        WinDivertWrapper divert(handle);
-
-        Packet packet;
-        WinDivertAddress address;
-        _running = true;
-
-        std::thread dns_loop_th(&LightDPI::_dns_loop, this);
-
-        while (_running)
         {
-            if (divert.recv(&packet, &address))
-            {
-                IPProtocol protocol = packet.get_protocol();
-                TCPHeader* tcp_header = packet.get_transport_layer<TCPHeader>();
+            // WinDivertWrapper automatically closes handle upon destruction
+            WinDivertWrapper divert(_handle);
 
-                // HTTPS
-                if (ntohs(tcp_header->destination_port) == 443)
+            Packet packet;
+            WinDivertAddress address;
+            _running = true;
+
+            std::thread dns_loop_th(&LightDPI::_dns_loop, this);
+
+            while (_running)
+            {
+                if (divert.recv(&packet, &address))
                 {
-                    if (_do_https_first_attack(divert, &packet, &address))
-                        continue;
-                }
+                    IPProtocol protocol = packet.get_protocol();
+                    TCPHeader* tcp_header = packet.get_transport_layer<TCPHeader>();
 
-                divert.send(packet, &address);
+                    // HTTPS
+                    if (ntohs(tcp_header->destination_port) == 443)
+                    {
+                        if (_do_https_first_attack(divert, &packet, &address))
+                            continue;
+                    }
+
+                    divert.send(packet, &address);
+                }
+                else
+                {
+                    if (GetLastError() != ERROR_NO_DATA)
+                    {
+                        logger.withfl("divert.recv error: ", (int)GetLastError()).commit();
+                    }
+                }
             }
-            else
-            {
-                logger.withfl("divert.recv error: ", (int)GetLastError()).commit();
-            }
+
+            dns_loop_th.join();
         }
 
-        dns_loop_th.join();
+        _handle = nullptr;
     }
 
     void LightDPI::stop()
     {
         _running = false;
+        WinDivertShutdown(_handle, WINDIVERT_SHUTDOWN_BOTH);
+        WinDivertShutdown(_dns_handle, WINDIVERT_SHUTDOWN_BOTH);
     }
 
     void LightDPI::_dns_loop()
@@ -91,37 +103,45 @@ namespace ldpi
         internal::Logger logger;
         logger.withfl("WinDivert DNS filter: ", filter).commit();
 
-        HANDLE handle = WinDivertOpen(
+        _dns_handle = WinDivertOpen(
             filter.c_str(),
             WINDIVERT_LAYER_NETWORK,
             WINDIVERT_PRIORITY_HIGHEST-1001,
             0
         );
 
-        if (handle == INVALID_HANDLE_VALUE)
+        if (_dns_handle == INVALID_HANDLE_VALUE)
         {
+            _dns_handle = nullptr;
             throw WinDivertOpenError("Failed opening WinDivert handle (DNS)");
         }
 
-        WinDivertWrapper divert(handle);
-
-        Packet packet;
-        WinDivertAddress address;
-
-        while (_running)
         {
-            if (divert.recv(&packet, &address))
-            {
-                if (_do_dns_query(divert, &packet, &address))
-                    continue;
+            WinDivertWrapper divert(_dns_handle);
 
-                divert.send(packet, &address);
-            }
-            else
+            Packet packet;
+            WinDivertAddress address;
+
+            while (_running)
             {
-                logger.withfl("(DNS) divert.recv error: ", (int)GetLastError()).commit();
+                if (divert.recv(&packet, &address))
+                {
+                    if (_do_dns_query(divert, &packet, &address))
+                        continue;
+
+                    divert.send(packet, &address);
+                }
+                else
+                {
+                    if (GetLastError() != ERROR_NO_DATA)
+                    {
+                        logger.withfl("(DNS) divert.recv error: ", (int)GetLastError()).commit();
+                    }
+                }
             }
         }
+
+        _dns_handle = nullptr;
     }
 
     void LightDPI::_get_filter(std::string& filter)
