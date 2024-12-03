@@ -77,6 +77,10 @@ target_link_libraries(${LDPI_CORE_LIB_NAME}
     ${LDPI_CORE_LIB_LIBRARIES}
 )
 
+install(TARGETS ${LDPI_CORE_LIB_NAME} DESTINATION .)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/WinDivert.dll DESTINATION .)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/WinDivert64.sys DESTINATION .)
+
 if(LDPI_BUILD_CLI)
     add_executable(${LDPI_CLI_NAME}
         lightdpi-cli/cli.cxx
@@ -86,4 +90,6 @@ if(LDPI_BUILD_CLI)
     target_link_libraries(${LDPI_CLI_NAME}
         ${LDPI_CORE_LIB_NAME}
     )
+
+    install(TARGETS ${LDPI_CLI_NAME} DESTINATION .)
 endif()

@@ -129,6 +129,8 @@ void print_info(const ldpi::Params& params)
             std::cout << "Unknown" << std::endl;
         }
     }
+
+    std::cout << "\nClick [CTRL+C] to stop" << std::endl;
 }
 
 // I would use WinMain but meh
