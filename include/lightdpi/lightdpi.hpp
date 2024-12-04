@@ -4,6 +4,7 @@
 #include "params.hpp"
 #include "common/windivertwrapper.hpp"
 #include "dns/dnsresolver.hpp"
+#include "modifiers/modifier.hpp"
 
 #include <string>
 
@@ -12,7 +13,7 @@ namespace ldpi
     class LightDPI
     {
     public:
-        // Constructor takes ownership of Params
+        // LightDPI takes ownership of Params
         LightDPI(const Params& params);
         ~LightDPI();
 
@@ -36,14 +37,16 @@ namespace ldpi
             Packet* packet,
             WinDivertAddress* address);
 
-        bool _do_zero_attack(
+        bool _apply_modifier(
             const WinDivertWrapper& divert,
             Packet* packet,
-            WinDivertAddress* address);
+            WinDivertAddress* address,
+            uint8_t modifier_flags);
 
-        bool _do_https_first_attack(
+        bool _apply_modifier(
             const WinDivertWrapper& divert,
             Packet* packet,
-            WinDivertAddress* address);
+            WinDivertAddress* address,
+            Modifier* modifier);
     };
 }

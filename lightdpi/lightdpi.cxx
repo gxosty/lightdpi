@@ -62,15 +62,38 @@ namespace ldpi
             {
                 if (divert.recv(&packet, &address))
                 {
-                    IPProtocol protocol = packet.get_protocol();
-                    TCPHeader* tcp_header = packet.get_transport_layer<TCPHeader>();
+                    #define fl ModifierFlags
 
-                    // HTTPS
-                    if (ntohs(tcp_header->destination_port) == 443)
+                    if (packet.is_tcp_syn())
                     {
-                        if (_do_https_first_attack(divert, &packet, &address))
-                            continue;
+                        if (_apply_modifier(
+                            divert, &packet, &address,
+                            fl::TCP_HANDSHAKE | fl::ALL
+                        )) continue;
                     }
+
+                    if (packet.is_http_request())
+                    {
+                        if (_apply_modifier(
+                            divert, &packet, &address,
+                            fl::HTTP_REQUEST | fl::ALL
+                        )) continue;
+                    }
+
+                    if (packet.is_tls_client_hello())
+                    {
+                        if (_apply_modifier(
+                            divert, &packet, &address,
+                            fl::TLS_CLIENT_HELLO | fl::ALL
+                        )) continue;
+                    }
+
+                    if (_apply_modifier(
+                        divert, &packet, &address,
+                        fl::OTHER | fl::ALL
+                    )) continue;
+
+                    #undef fl
 
                     divert.send(packet, &address);
                 }
@@ -202,45 +225,41 @@ namespace ldpi
         return false;
     }
 
-    bool LightDPI::_do_zero_attack(
+    bool LightDPI::_apply_modifier(
         const WinDivertWrapper& divert,
         Packet* packet,
-        WinDivertAddress* address)
+        WinDivertAddress* address,
+        uint8_t modifier_flags)
     {
-        if (_params.desync.zero_attack)
+        for (Modifier* modifier : _params.modifiers)
         {
-            if (address->Outbound && _params.desync.zero_attack->filter_out(packet))
+            if (modifier->get_flags() & modifier_flags)
             {
-                _params.desync.zero_attack->modify_out(divert, packet, address);
-                return true;
-            }
-            else if (!address->Outbound && _params.desync.zero_attack->filter_in(packet))
-            {
-                _params.desync.zero_attack->modify_in(divert, packet, address);
-                return true;
+                if (_apply_modifier(divert, packet, address, modifier))
+                {
+                    return true;
+                }
             }
         }
 
         return false;
     }
 
-    bool LightDPI::_do_https_first_attack(
+    bool LightDPI::_apply_modifier(
         const WinDivertWrapper& divert,
         Packet* packet,
-        WinDivertAddress* address)
+        WinDivertAddress* address,
+        Modifier* modifier)
     {
-        if (_params.desync.first_attack)
+        if (address->Outbound && modifier->filter_out(packet))
         {
-            if (address->Outbound && _params.desync.first_attack->filter_out(packet))
-            {
-                _params.desync.first_attack->modify_out(divert, packet, address);
-                return true;
-            }
-            else if (!address->Outbound && _params.desync.first_attack->filter_in(packet))
-            {
-                _params.desync.first_attack->modify_in(divert, packet, address);
-                return true;
-            }
+            modifier->modify_out(divert, packet, address);
+            return true;
+        }
+        else if (!address->Outbound && modifier->filter_in(packet))
+        {
+            modifier->modify_in(divert, packet, address);
+            return true;
         }
 
         return false;

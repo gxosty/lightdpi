@@ -1,5 +1,6 @@
 #include <iostream>
 #include <filesystem>
+#include <map>
 #include <unordered_map>
 #include <string>
 #include <signal.h>
@@ -58,6 +59,39 @@ void get_params(int argc, char** argv, ldpi::Params& params)
     std::exit(1);
 }
 
+std::string modifier_flags_to_string(uint8_t flags)
+{
+    if (flags == ldpi::ModifierFlags::ALL)
+    {
+        return "[ALL]";
+    }
+
+    std::string flags_str = "[";
+
+    static std::map<uint8_t, std::string> flags_map = {
+        {ldpi::ModifierFlags::TCP_HANDSHAKE, "TCP Handshake"},
+        {ldpi::ModifierFlags::HTTP_REQUEST, "HTTP"},
+        {ldpi::ModifierFlags::TLS_CLIENT_HELLO, "HTTPS"},
+        {ldpi::ModifierFlags::OTHER, "Other"}
+    };
+
+    for (auto& [key, value] : flags_map) {
+        if (flags & key)
+        {
+            if (flags_str.size() > 1)
+            {
+                flags_str += ", ";
+            }
+
+            flags_str += flags_map[key];
+        }
+    }
+
+    flags_str.append(1, ']');
+
+    return flags_str;
+}
+
 void print_info(const ldpi::Params& params)
 {
     std::cout << "LightDPI v" LDPI_VERSION << std::endl;
@@ -93,40 +127,42 @@ void print_info(const ldpi::Params& params)
         }
     }
 
-    if (params.desync.zero_attack)
+    if (!params.modifiers.empty())
     {
-        std::cout << "\nZero Attack: " << std::endl;
-        // TODO
-    }
-
-    if (params.desync.first_attack)
-    {
-        std::cout << "\nFirst Attack: ";
+        std::cout << "\nModifiers: " << std::endl;
 
         static std::unordered_map<ldpi::FakeModifier::Type, std::string> fake_str = {
             {ldpi::FakeModifier::Type::FAKE_RANDOM, "FAKE_RANDOM"},
             {ldpi::FakeModifier::Type::FAKE_DECOY, "FAKE_DECOY"}
         };
 
-        if (auto fakettl = dynamic_cast<ldpi::FakeACKModifier*>(params.desync.first_attack))
+        for (ldpi::Modifier* modifier : params.modifiers)
         {
-            std::cout << "FakeACK" << std::endl;
-            std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;
-        }
-        else if (auto fakettl = dynamic_cast<ldpi::FakeTTLModifier*>(params.desync.first_attack))
-        {
-            std::cout << "FakeTTL" << std::endl;
-            std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;
-            std::cout << "- Fake Packet TTL: " << fakettl->get_fake_packet_ttl() << std::endl;
-        }
-        else if (auto fakettl = dynamic_cast<ldpi::FakeChecksumModifier*>(params.desync.first_attack))
-        {
-            std::cout << "FakeChecksum" << std::endl;
-            std::cout << "- Fake Packet Type: " << fake_str[fakettl->get_fake_packet_type()] << std::endl;
-        }
-        else
-        {
-            std::cout << "Unknown" << std::endl;
+            std::string flags_str = modifier_flags_to_string(modifier->get_flags());
+            std::cout << "- ";
+
+            if (auto fake_modifier = dynamic_cast<ldpi::FakeModifier*>(modifier))
+            {
+                if (auto fakeack = dynamic_cast<ldpi::FakeACKModifier*>(modifier))
+                {
+                    std::cout << "FakeACK " << flags_str << std::endl;
+                }
+                else if (auto fakettl = dynamic_cast<ldpi::FakeTTLModifier*>(modifier))
+                {
+                    std::cout << "FakeTTL " << flags_str << std::endl;
+                    std::cout << "  | Fake Packet TTL: " << fakettl->get_fake_packet_ttl() << std::endl;
+                }
+                else if (auto fakechecksum = dynamic_cast<ldpi::FakeChecksumModifier*>(modifier))
+                {
+                    std::cout << "FakeChecksum " << flags_str << std::endl;
+                }
+
+                std::cout << "  | Fake Packet Type: " << fake_str[fake_modifier->get_fake_packet_type()] << std::endl;
+            }
+            else
+            {
+                std::cout << "Unknown" << std::endl;
+            }
         }
     }
 

@@ -14,8 +14,9 @@ namespace ldpi
         };
 
     public:
-        FakeModifier(Type fake_packet_type)
-            : _fake_packet_type{fake_packet_type} {}
+        FakeModifier(Type fake_packet_type, uint8_t flags) :
+            Modifier(flags),
+            _fake_packet_type{fake_packet_type} {}
 
         Type get_fake_packet_type() const
         {

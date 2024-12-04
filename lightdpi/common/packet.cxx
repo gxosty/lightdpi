@@ -62,6 +62,55 @@ namespace ldpi
         return InBuffer(data, size);
     }
 
+    bool Packet::is_tcp_syn()
+    {
+        if (this->get_protocol() != IPProtocol::TCP)
+        {
+            return false;
+        }
+
+        TCPHeader* tcp_header = this->get_transport_layer<TCPHeader>();
+
+        return bool(tcp_header->flags & TCPFlags::SYN);
+    }
+
+    bool Packet::is_http_request()
+    {
+        return false;
+    }
+
+    bool Packet::is_tls_client_hello()
+    {
+        if (this->get_protocol() != IPProtocol::TCP)
+        {
+            return false;
+        }
+
+        TCPHeader* tcp_header = this->get_transport_layer<TCPHeader>();
+
+        namespace f = TCPFlags;
+        if ((tcp_header->flags != f::ACK) && (tcp_header->flags != (f::PSH | f::ACK)))
+        {
+            return false;
+        }
+
+        InBuffer data = this->get_body();
+
+        if (data.get_size() < 3)
+        {
+            return false;
+        }
+
+        return (
+            (data[0] == 0x16) &&
+            (data[1] == 0x03) &&
+            (
+                (data[2] == 0x01) ||
+                (data[2] == 0x03)
+            )
+        );
+    }
+
     void Packet::reverse_direction()
     {
         IPProtocol protocol = this->get_protocol();

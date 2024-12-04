@@ -27,6 +27,11 @@ namespace ldpi
             return reinterpret_cast<T*>(transport_layer);
         }
 
+        // shortcuts
+        bool is_tcp_syn();
+        bool is_http_request();
+        bool is_tls_client_hello();
+
         void update_checksums();
         void reverse_direction();
         void make_unique();

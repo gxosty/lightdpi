@@ -64,22 +64,17 @@ void load_from_config(fs::path config_path, ldpi::Params& params)
         }
     }
 
-    if (config.contains("desync"))
+    if (config.contains("modifiers"))
     {
-        if (config["desync"].contains("zero-attack"))
+        for (auto& modifier_data : config["modifiers"].items())
         {
-            // TODO
-        }
-        if (config["desync"].contains("https-first-attack"))
-        {
-            auto& first_attack = config["desync"]["https-first-attack"];
-            std::string first_attack_type = first_attack["type"].get<std::string>();
+            std::string modifier_type = modifier_data.value()["type"].get<std::string>();
 
-            if (first_attack_type.rfind("fake-", 0) != std::string::npos)
+            if (modifier_type.rfind("fake-", 0) != std::string::npos)
             {
-                auto& first_attack_params = first_attack["params"];
+                auto& modifier_params = modifier_data.value()["params"];
 
-                std::string fake_packet_type_str = first_attack_params["fake-packet-type"].get<std::string>();
+                std::string fake_packet_type_str = modifier_params["fake-packet-type"].get<std::string>();
 
                 ldpi::FakeModifier::Type fake_packet_type;
 
@@ -96,27 +91,27 @@ void load_from_config(fs::path config_path, ldpi::Params& params)
                     throw std::runtime_error("Invalid fake packet type for FakeTTL");
                 }
 
-                if (first_attack_type == "fake-ack")
+                if (modifier_type == "fake-ack")
                 {
-                    params.desync.first_attack = new ldpi::FakeACKModifier(fake_packet_type);
+                    params.modifiers.push_back(new ldpi::FakeACKModifier(fake_packet_type));
                 }
-                else if (first_attack_type == "fake-ttl")
+                else if (modifier_type == "fake-ttl")
                 {
-                    int fake_packet_ttl  = first_attack_params["fake-packet-ttl"].get<int>();
-                    params.desync.first_attack = new ldpi::FakeTTLModifier(fake_packet_type, fake_packet_ttl);
+                    int fake_packet_ttl  = modifier_params["fake-packet-ttl"].get<int>();
+                    params.modifiers.push_back(new ldpi::FakeTTLModifier(fake_packet_type, fake_packet_ttl));
                 }
-                else if (first_attack_type == "fake-checksum")
+                else if (modifier_type == "fake-checksum")
                 {
-                    params.desync.first_attack = new ldpi::FakeChecksumModifier(fake_packet_type);
+                    params.modifiers.push_back(new ldpi::FakeChecksumModifier(fake_packet_type));
                 }
                 else
                 {
-                    throw std::runtime_error("Invalid Fake modifier: " + first_attack_type);
+                    throw std::runtime_error("Invalid Fake modifier: " + modifier_type);
                 }
             }
             else
             {
-                throw std::runtime_error("Invalid first attack type: " + first_attack_type);
+                throw std::runtime_error("Invalid first attack type: " + modifier_type);
             }
         }
     }

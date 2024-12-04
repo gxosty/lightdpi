@@ -9,12 +9,10 @@ namespace ldpi
 {
     struct Params
     {
+        // for now this does nothing
         bool verbose = false;
+
         std::vector<DNSResolver*> dns;
-        struct _desync_
-        {
-            Modifier* zero_attack = nullptr;
-            Modifier* first_attack = nullptr;
-        } desync;
+        std::vector<Modifier*> modifiers;
     };
 }

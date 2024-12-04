@@ -12,32 +12,15 @@
 
 namespace ldpi
 {
-    FakeACKModifier::FakeACKModifier(FakeModifier::Type fake_packet_type)
-            : FakeModifier(fake_packet_type) {}
+    FakeACKModifier::FakeACKModifier(FakeModifier::Type fake_packet_type) :
+        FakeModifier(
+            fake_packet_type,
+            ModifierFlags::HTTP_REQUEST |
+            ModifierFlags::TLS_CLIENT_HELLO) {}
 
     bool FakeACKModifier::filter_out(Packet* packet)
     {
-        if (packet->get_protocol() != IPProtocol::TCP)
-        {
-            return false;
-        }
-
-        TCPHeader* tcp_header = packet->get_transport_layer<TCPHeader>();
-
-        namespace f = TCPFlags;
-        if ((tcp_header->flags != f::ACK) && (tcp_header->flags != (f::PSH | f::ACK)))
-        {
-            return false;
-        }
-
-        InBuffer data = packet->get_body();
-
-        if (is_tls_client_hello(data))
-        {
-            return true;
-        }
-
-        return false;
+        return packet->is_tls_client_hello() || packet->is_http_request();
     }
 
     void FakeACKModifier::modify_out(

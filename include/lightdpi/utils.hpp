@@ -17,6 +17,4 @@ namespace ldpi
     int get_port_by_protocol(const std::string& url);
 
     void generate_random_bytes(char* buffer, int count);
-
-    bool is_tls_client_hello(const InBuffer& data);
 }
