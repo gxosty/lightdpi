@@ -23,7 +23,7 @@ namespace ldpi
         _curl = curl_easy_init();
         curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, &internal::_write_function);
-        curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 10L);
+        curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 
         if (!_ip.empty())
         {
