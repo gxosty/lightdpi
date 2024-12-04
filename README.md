@@ -33,9 +33,8 @@ LightDPI requires a configuration file (default: `config.json`) to define its be
 The configuration file is a JSON file that defines the parameters LightDPI uses. Currently, it supports:
 
 * `dns`: List of DNS resolution methods to use. (default: `null`)
-* `desync.zero-attack`: Set Zero Attack modifier to use. (default: `null`)
-* `desync.https-first-attack`: Set HTTP First Attack modifier to use. (default: `null`)
-* (Future) Additional modifiers and options can be defined here.
+* `modifiers`: List of Modifiers for altering TCP Handshake, HTTP, HTTPS and other packets.
+* (Future) Additional options and paramters can be defined here.
 
 **Example configuration file:**
 ```json
@@ -51,20 +50,27 @@ The configuration file is a JSON file that defines the parameters LightDPI uses.
     }
   ],
 
-  "desync" : {
-    "zero-attack" : null,
-    "https-first-attack" : {
+  "modifiers" : [
+    {
       "type" : "fake-ttl", // Fake Packets with Invalid TTL
       "params" : {
         "fake-packet-type" : "fake-decoy",
         "fake-packet-ttl" : 7
       }
     }
-  }
+  ]
 }
 ```
 > [!NOTE]
 > Note that comments in json are not allowed, they are here only for explanation purposes
+
+**Currently supported modifiers:**
+* `fake-ack` (http, https). Sends fake packet with invalid TCP ACK number.
+* `fake-ttl` (http, https). Sends fake packet with invalid IP TTL number. Params:
+  * `fake-packet-ttl`: TTL of fake packet. Must be number.
+* `fake-checksum` (http, https). Sends fake packet with invalid TCP Checksum.
+> [!NOTE]
+> Modifiers that start with `fake-` prefix have required parameter `fake-packet-type`, which is type of fake packet to send. Can be `FAKE_DECOY` (sends fake HTTP request or TLSClientHello packet depending on protocol) or `FAKE_RANDOM` (sends random bytes in body/payload).
 
 ### Building:
 
