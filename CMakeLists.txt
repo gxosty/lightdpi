@@ -77,9 +77,9 @@ target_link_libraries(${LDPI_CORE_LIB_NAME}
     ${LDPI_CORE_LIB_LIBRARIES}
 )
 
-install(TARGETS ${LDPI_CORE_LIB_NAME} DESTINATION .)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/WinDivert.dll DESTINATION .)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/WinDivert64.sys DESTINATION .)
+install(TARGETS ${LDPI_CORE_LIB_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/WinDivert.dll)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/WinDivert64.sys )
 
 if(LDPI_BUILD_CLI)
     add_executable(${LDPI_CLI_NAME}
@@ -91,5 +91,5 @@ if(LDPI_BUILD_CLI)
         ${LDPI_CORE_LIB_NAME}
     )
 
-    install(TARGETS ${LDPI_CLI_NAME} DESTINATION .)
+    install(TARGETS ${LDPI_CLI_NAME})
 endif()
