@@ -28,11 +28,10 @@ namespace ldpi
             Packet* packet,
             WinDivertAddress* address)
     {
-        Packet* fake_packet = nullptr;
         size_t fake_bytes_size = 0;
 
-        fake_packet = packet->copy();
-        InBuffer body = fake_packet->get_body();
+        _fake_packet.copy_from(packet->get_data(), packet->get_size());
+        InBuffer body = _fake_packet.get_body();
         char* data = body.get_data();
 
         if (_fake_packet_type == FakeModifier::Type::FAKE_DECOY)
@@ -57,21 +56,19 @@ namespace ldpi
             return;
         }
 
-        IPHeader* ip_header = fake_packet->get_ip_header();
+        IPHeader* ip_header = _fake_packet.get_ip_header();
         size_t headers_size = (uintptr_t)data - (uintptr_t)ip_header;
         ip_header->length = htons(fake_bytes_size + headers_size);
-        fake_packet->set_size(fake_bytes_size + headers_size);
+        _fake_packet.set_size(fake_bytes_size + headers_size);
 
-        TCPHeader* tcp_header = fake_packet->get_transport_layer<TCPHeader>();
+        TCPHeader* tcp_header = _fake_packet.get_transport_layer<TCPHeader>();
 
         tcp_header->ack_number = rand() % UINT32_MAX;
 
         ip_header->checksum = calculate_ip_checksum(ip_header);
         tcp_header->checksum = calculate_tcp_checksum(ip_header, tcp_header);
 
-        divert.send(*fake_packet, address);
+        divert.send(_fake_packet, address);
         divert.send(*packet, address);
-
-        delete fake_packet;
     }
 }

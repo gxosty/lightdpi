@@ -15,5 +15,7 @@ namespace ldpi
             const WinDivertWrapper& divert,
             Packet* packet,
             WinDivertAddress* address) override;
+    private:
+        Packet _fake_packet;
     };
 }

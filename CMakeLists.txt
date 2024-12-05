@@ -22,8 +22,6 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCURL_STATICLIB")
-
 list(APPEND LDPI_CORE_LIB_SOURCES
     # Core
     lightdpi/lightdpi.cxx

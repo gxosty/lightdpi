@@ -23,5 +23,6 @@ namespace ldpi
 
     private:
         int _fake_packet_ttl;
+        Packet _fake_packet;
     };
 }
