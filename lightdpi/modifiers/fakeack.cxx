@@ -63,7 +63,10 @@ namespace ldpi
 
         TCPHeader* tcp_header = _fake_packet.get_transport_layer<TCPHeader>();
 
-        tcp_header->ack_number = rand() % UINT32_MAX;
+        tcp_header->ack_number = \
+            (tcp_header->ack_number + UINT32_MAX * 0.5)
+            + (rand() % uint32_t(UINT32_MAX * 0.65))
+            - uint32_t(UINT32_MAX * 0.25);
 
         ip_header->checksum = calculate_ip_checksum(ip_header);
         tcp_header->checksum = calculate_tcp_checksum(ip_header, tcp_header);
